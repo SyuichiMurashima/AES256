@@ -1,38 +1,17 @@
-﻿Param($Path, $KeyPath, [switch]$Encrypto, [switch]$Decrypto)
+﻿##################################################
+# AES256 暗号/復号
+##################################################
+Param($Path, $KeyPath, [switch]$Encrypto, [switch]$Decrypto)
 
 # 暗号ファイルの拡張子
 $ExtName = "aes256"
 
-#####################################################################
-# 文字列をバイト配列にする
-#####################################################################
-function String2Byte( $String ){
-	$Byte = [System.Text.Encoding]::UTF8.GetBytes($String)
-	return $Byte
-}
-
-#####################################################################
-# バイト配列を文字列にする
-#####################################################################
-function Byte2String( $Byte ){
-	$String = [System.Text.Encoding]::UTF8.GetString($Byte)
-	return $String
-}
-
-#####################################################################
+##################################################
 # Base64 をバイト配列にする
-#####################################################################
+##################################################
 function Base642Byte( $Base64 ){
 	$Byte = [System.Convert]::FromBase64String($Base64)
 	return $Byte
-}
-
-#####################################################################
-# バイト配列を Base64 にする
-#####################################################################
-function Byte2Base64( $Byte ){
-	$Base64 = [System.Convert]::ToBase64String($Byte)
-	return $Base64
 }
 
 ##################################################
@@ -80,7 +59,6 @@ function AESEncrypto($KeyByte, $PlainByte){
 
 	return $DataByte
 }
-
 
 ##################################################
 # AES 復号化
@@ -150,13 +128,15 @@ if( -not (Test-Path $Path )){
 	exit
 }
 
-
+# Key
 if( -not (Test-Path $KeyPath )){
 	echo "[FAIL] $KeyPath not found."
 	exit
 }
 
-if( (($Encrypto -eq $fals) -and ( $Decrypto -eq $false)) -or(($Encrypto -eq $true) -and ( $Decrypto -eq $true))){
+# 暗号/復号オプション
+if( (($Encrypto -eq $fals) -and ( $Decrypto -eq $false)) -or `
+	(($Encrypto -eq $true) -and ( $Decrypto -eq $true))){
 	echo "[FAIL] select -Encrypto or -Decrypto"
 	exit
 }
@@ -176,10 +156,9 @@ if( $Encrypto ){
 
 	# 暗号
 	$ByteEncryptoData = AESEncrypto $ByteKey $BytePlainData
-	$Base64EncryptoData = Byte2Base64 $ByteEncryptoData
 
 	# ファイル出力
-	Set-Content -Path $EncryptoFileName -Value $Base64EncryptoData -Encoding UTF8
+	Set-Content -Path $EncryptoFileName -Value $ByteEncryptoData -Encoding Byte
 }
 # 復号化
 else{
@@ -194,10 +173,9 @@ else{
 	$DecryptoFileName = $Path.Replace($ChangeString,"")
 
 	# 暗号ファイル読み込み
-	$Base64EncryptoData = Get-Content $Path
+	$ByteEncryptoData = Get-Content $Path  -Encoding Byte
 
 	# 復号
-    $ByteEncryptoData = Base642Byte $Base64EncryptoData
 	$BytePlainData = AESDecrypto $ByteKey $ByteEncryptoData
 
 	# 平文ファイル出力
